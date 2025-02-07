@@ -1,4 +1,4 @@
-defmodule InstaClone.Posts.Post do
+defmodule InstaClone.Post do
   use Ecto.Schema
   import Ecto.Changeset
 
