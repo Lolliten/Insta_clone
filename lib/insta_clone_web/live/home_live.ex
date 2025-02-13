@@ -49,12 +49,21 @@ defmodule InstaCloneWeb.HomeLive do
     {:noreply, socket}
   end
 
-  def handle_event("save post", %{"post" => params}, socket) do
-    %{current_user: user} = socket.assigns
+  def handle_event("save post", %{"post" => post_params}, socket) do
+    %{current_user: user_id} = socket.assigns
 
     post_params
       |> Map.put("user_id", user_id)
 
     {:noreply, socket}
+  end
+
+  defp uploaded_files(socket) do
+    consume_uploaded_entries(socket, :image, fn %{path: path}, _entry ->
+      dest = Path.join([:code.priv_dir(:insta_clone), "static", "uploads", Path.basename(path)])
+
+      File.cp!(path, dest)
+      {:ok, ~p"/uploads/#{Path.basename(dest)}"}
+    end)
   end
 end
