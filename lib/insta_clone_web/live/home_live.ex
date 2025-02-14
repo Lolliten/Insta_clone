@@ -19,12 +19,12 @@ defmodule InstaCloneWeb.HomeLive do
 
     <button type="button" phx-click={show_modal("new-post-modal")}>Create Post</button>
     <.modal id="new-post-modal">
-    <.simple_form for={@form} phx-change="validate" phx-submit="save_post">
-      <.live_file_input upload={@uploads.image} required />
-      <.input field={@form[:caption]} type="textarea" label="Caption" required />
+      <.simple_form for={@form} phx-change="validate" phx-submit="save_post">
+        <.live_file_input upload={@uploads.image} required />
+        <.input field={@form[:caption]} type="textarea" label="Caption" required />
 
-      <.button type="submit" phx-disable-with="Saving...">Create Post</.button>
-    </.simple_form>
+        <.button type="submit" phx-disable-with="Saving...">Create Post</.button>
+      </.simple_form>
     </.modal>
     """
   end
@@ -52,8 +52,27 @@ defmodule InstaCloneWeb.HomeLive do
   def handle_event("save post", %{"post" => post_params}, socket) do
     %{current_user: user_id} = socket.assigns
 
+    # First we call user_id
+    # Then we call image_path
+    # Post.save is defined in post.ex
+    # Use push_navigate instead of push_path to close the post modal, (avoids javascript)
     post_params
-      |> Map.put("user_id", user_id)
+    |> Map.put("user_id", user_id)
+    |> Map.put("image_path", List.first(consume_files(socket)))
+    |> Posts.save()
+    |> case do
+      {:ok, _post} ->
+          socket =
+            socket
+            |> put_flash(:info, "Post created successfully")
+            |> push_navigate(to: ~p"/home")
+        {:error, changeset} ->
+          socket =
+            socket
+            |> put_flash(:error, "Failed to create post")
+            |> assign(:form, changeset)
+          {:noreply, socket}
+    end
 
     {:noreply, socket}
   end
