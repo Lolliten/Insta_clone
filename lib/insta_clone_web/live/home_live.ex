@@ -13,11 +13,28 @@ defmodule InstaCloneWeb.HomeLive do
   """
 
   @impl true
+  def render(%{loading: true} = assigns) do
+    ~H"""
+    It's loading... ♥
+    """
+  end
+
   def render(assigns) do
     ~H"""
     <h1 class="text-2xl font-bold">Home</h1>
 
     <button type="button" phx-click={show_modal("new-post-modal")}>Create Post</button>
+
+    <div id="feed" phx-update="stream" class="flex flex-col gap-2">
+      <div :for={{dom-id, post} <- @stream.posts} id={dom-id} class="w-1/2 mx-auto flex-col gap-2 border-rounded">
+
+      <img src={post.image_path} />
+      <p>%= post.user.email %></p>
+      <p><%= post.caption %></p>
+      </div>
+    </div>
+
+
     <.modal id="new-post-modal">
       <.simple_form for={@form} phx-change="validate" phx-submit="save_post">
         <.live_file_input upload={@uploads.image} required />
@@ -31,6 +48,9 @@ defmodule InstaCloneWeb.HomeLive do
 
   @impl true
   def mount(_params, _session, socket) do
+    if connected?(socket) do
+
+    end
     form =
       %Post{}
       |> Post.changeset(%{})
@@ -38,9 +58,12 @@ defmodule InstaCloneWeb.HomeLive do
 
     socket =
       socket
-      |> assign(form: form)
+      |> assign(form: form, loading: false)
       |> allow_upload(:image, accept: ~w(.png .jpg), max_entries: 1)
+      |> stream(:posts, Posts.list_posts())
 
+    {:ok, assign(socket, loading: true)}
+  else
     {:ok, socket}
   end
 
@@ -67,17 +90,11 @@ defmodule InstaCloneWeb.HomeLive do
             |> put_flash(:info, "Post created successfully")
             |> push_navigate(to: ~p"/home")
         {:error, changeset} ->
-          socket =
-            socket
-            |> put_flash(:error, "Failed to create post")
-            |> assign(:form, changeset)
           {:noreply, socket}
     end
-
-    {:noreply, socket}
   end
 
-  defp uploaded_files(socket) do
+  defp consume_files(socket) do
     consume_uploaded_entries(socket, :image, fn %{path: path}, _entry ->
       dest = Path.join([:code.priv_dir(:insta_clone), "static", "uploads", Path.basename(path)])
 
