@@ -2,6 +2,7 @@ defmodule InstaCloneWeb.HomeLive do
   use InstaCloneWeb, :live_view
 
   alias InstaClone.Post
+  alias InstaClone.Posts
 
   @doc """
   Renders the home page.
@@ -26,20 +27,19 @@ defmodule InstaCloneWeb.HomeLive do
     <button type="button" phx-click={show_modal("new-post-modal")}>Create Post</button>
 
     <div id="feed" phx-update="stream" class="flex flex-col gap-2">
-      <div :for={{dom-id, post} <- @stream.posts} id={dom-id} class="w-1/2 mx-auto flex-col gap-2 border-rounded">
-
-      <img src={post.image_path} />
-      <p>%= post.user.email %></p>
-      <p><%= post.caption %></p>
-      </div>
+      <%= for {dom_id, post} <- @stream.posts do %>
+        <div id={dom_id} class="w-1/2 mx-auto flex-col gap-2 border-rounded">
+          <img src={post.image_path} />
+          <p><%= post.user.email %></p>
+          <p><%= post.caption %></p>
+        </div>
+      <% end %>
     </div>
-
 
     <.modal id="new-post-modal">
       <.simple_form for={@form} phx-change="validate" phx-submit="save_post">
         <.live_file_input upload={@uploads.image} required />
         <.input field={@form[:caption]} type="textarea" label="Caption" required />
-
         <.button type="submit" phx-disable-with="Saving...">Create Post</.button>
       </.simple_form>
     </.modal>
@@ -48,23 +48,26 @@ defmodule InstaCloneWeb.HomeLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    if connected?(socket) do
+    case connected?(socket) do
+      true ->
+        form =
+          %Post{}
+          |> Post.changeset(%{})
+          |> to_form(as: "post")
 
+        posts = Posts.list_posts()
+
+        socket =
+          socket
+          |> assign(form: form, loading: false)
+          |> allow_upload(:image, accept: ~w(.png .jpg), max_entries: 1)
+          |> stream(:posts, posts)
+
+        {:ok, assign(socket, loading: true)}
+
+      false ->
+        {:ok, socket}
     end
-    form =
-      %Post{}
-      |> Post.changeset(%{})
-      |> to_form(as: "post")
-
-    socket =
-      socket
-      |> assign(form: form, loading: false)
-      |> allow_upload(:image, accept: ~w(.png .jpg), max_entries: 1)
-      |> stream(:posts, Posts.list_posts())
-
-    {:ok, assign(socket, loading: true)}
-  else
-    {:ok, socket}
   end
 
   @impl true

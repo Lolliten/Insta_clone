@@ -2,13 +2,13 @@ defmodule InstaClone.Posts do
   import Ecto.Query, warn: false
 
   alias InstaClone.Repo
-  alias InstaClone.Posts.Post
+  alias InstaClone.Post
 
   def list_posts do
     query =
       from p in Post,
       select: p,
-      order_by: [desc: inserted_at],
+      order_by: [desc: p.inserted_at],
       preload: [:user]
 
     Repo.all(query)
