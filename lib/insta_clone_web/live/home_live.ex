@@ -88,12 +88,14 @@ defmodule InstaCloneWeb.HomeLive do
     |> Posts.save()
     |> case do
       {:ok, _post} ->
-          socket =
-            socket
-            |> put_flash(:info, "Post created successfully")
-            |> push_navigate(to: ~p"/home")
-        {:error, changeset} ->
-          {:noreply, socket}
+        socket =
+          socket
+          |> put_flash(:info, "Post created successfully")
+          |> push_navigate(to: ~p"/home")
+
+        {:noreply, socket}
+      {:error, _changeset} ->
+        {:noreply, socket}
     end
   end
 
