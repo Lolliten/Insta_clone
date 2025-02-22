@@ -49,6 +49,7 @@ defmodule InstaCloneWeb.HomeLive do
   @impl true
   def mount(_params, _session, socket) do
     case connected?(socket) do
+      Phoenix.PubSub.subscribe(InstaClone.Pubsub, "posts")
       true ->
         form =
           %Post{}
@@ -87,11 +88,13 @@ defmodule InstaCloneWeb.HomeLive do
     |> Map.put("image_path", List.first(consume_files(socket)))
     |> Posts.save()
     |> case do
-      {:ok, _post} ->
+      {:ok, post} ->
         socket =
           socket
           |> put_flash(:info, "Post created successfully")
           |> push_navigate(to: ~p"/home")
+          
+        Phoenix.PubSub.broadcast(InstaClone.PubSub, "posts", {:new, post})
 
         {:noreply, socket}
       {:error, _changeset} ->
