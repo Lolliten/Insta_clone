@@ -5,13 +5,14 @@ defmodule InstaClone.Posts do
   alias InstaClone.Post
 
   def list_posts do
-    query =
-      from p in Post,
-      select: p,
-      order_by: [desc: p.inserted_at],
-      preload: [:user]
+    Repo.all(Post) |> Repo.preload(:user)
+    #query =
+      #from p in Post,
+      #select: p,
+      #order_by: [desc: p.inserted_at],
+      #preload: [:user]
 
-    Repo.all(query)
+    #Repo.all(query)
   end
 
   # First we call Post.changeset to create a changeset

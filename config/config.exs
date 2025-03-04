@@ -20,7 +20,8 @@ config :insta_clone, InstaCloneWeb.Endpoint,
     layout: false
   ],
   pubsub_server: InstaClone.PubSub,
-  live_view: [signing_salt: "FHmLn8wE"]
+  live_view: [signing_salt: "FHmLn8wE"],
+  start_pool_size: 5
 
 # Configures the mailer
 #

@@ -1,5 +1,6 @@
 defmodule InstaCloneWeb.HomeLive do
   use InstaCloneWeb, :live_view
+  import Phoenix.Component
 
   alias InstaClone.Post
   alias InstaClone.Posts
@@ -14,11 +15,12 @@ defmodule InstaCloneWeb.HomeLive do
   """
 
   @impl true
-  def render(%{loading: true} = assigns) do
-    ~H"""
-    It's loading... ♥
-    """
-  end
+  #def render(%{loading: true} = assigns) do
+    #~H"""
+    #It's loading... ♥
+    #"""
+  #end
+
 
   def render(assigns) do
     ~H"""
@@ -49,8 +51,8 @@ defmodule InstaCloneWeb.HomeLive do
   @impl true
   def mount(_params, _session, socket) do
     case connected?(socket) do
-      Phoenix.PubSub.subscribe(InstaClone.Pubsub, "posts")
       true ->
+        Phoenix.PubSub.subscribe(InstaClone.Pubsub, "posts")
         form =
           %Post{}
           |> Post.changeset(%{})
@@ -60,11 +62,11 @@ defmodule InstaCloneWeb.HomeLive do
 
         socket =
           socket
-          |> assign(form: form, loading: false)
-          |> allow_upload(:image, accept: ~w(.png .jpg), max_entries: 1)
+          |> assign(form: form)
           |> stream(:posts, posts)
+          |> allow_upload(:image, accept: ~w(.png .jpg), max_entries: 1)
 
-        {:ok, assign(socket, loading: true)}
+        {:ok, socket}
 
       false ->
         {:ok, socket}
@@ -76,6 +78,7 @@ defmodule InstaCloneWeb.HomeLive do
     {:noreply, socket}
   end
 
+  @impl true
   def handle_event("save post", %{"post" => post_params}, socket) do
     %{current_user: user_id} = socket.assigns
 
@@ -93,7 +96,7 @@ defmodule InstaCloneWeb.HomeLive do
           socket
           |> put_flash(:info, "Post created successfully")
           |> push_navigate(to: ~p"/home")
-          
+
         Phoenix.PubSub.broadcast(InstaClone.PubSub, "posts", {:new, post})
 
         {:noreply, socket}
@@ -109,5 +112,10 @@ defmodule InstaCloneWeb.HomeLive do
       File.cp!(path, dest)
       {:ok, ~p"/uploads/#{Path.basename(dest)}"}
     end)
+  end
+
+  @impl true
+  def handle_info({:new, post}, socket) do
+    {:noreply, stream_insert(socket, :posts, post)}
   end
 end
