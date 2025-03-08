@@ -68,6 +68,7 @@ defmodule InstaCloneWeb.Router do
       on_mount: [{InstaCloneWeb.UserAuth, :ensure_authenticated}] do
       #ive "/uploads", HomeLive, :index
       live "/home", HomeLive, :index
+      live "/posts/:id", PostLive, :show
       live "/users/settings", UserSettingsLive, :edit
       live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
     end

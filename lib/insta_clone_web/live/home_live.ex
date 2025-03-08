@@ -2,7 +2,7 @@ defmodule InstaCloneWeb.HomeLive do
   use InstaCloneWeb, :live_view
   import Phoenix.Component
 
-  alias InstaClone.Post
+  #alias InstaClone.Post
   alias InstaClone.Posts
 
   @doc """
@@ -24,53 +24,60 @@ defmodule InstaCloneWeb.HomeLive do
 
   def render(assigns) do
     ~H"""
-    <h1 class="text-2xl font-bold">Home</h1>
+    <div>
+      <.header>
+        Posts Feed
+        <:actions>
+          <.link phx-click={show_modal("new-post-modal")}>
+            <.button>Create Post</.button>
+          </.link>
+        </:actions>
+      </.header>
 
-    <button type="button" phx-click={show_modal("new-post-modal")}>Create Post</button>
+      <.table
+        id="posts"
+        rows={@streams.posts}
+      >
+        <:col :let={{_id, post}} label="User"><%= post.user.email %></:col>
+        <:col :let={{_id, post}} label="Image">
+          <img src={post.image_path} class="w-32 h-32 object-cover" />
+        </:col>
+        <:col :let={{_id, post}} label="Caption"><%= post.caption %></:col>
+        <:action :let={{_id, post}}>
+          <div class="sr-only">
+            <.link navigate={~p"/posts/#{post}"}>Show</.link>
+          </div>
+        </:action>
+      </.table>
 
-    <div id="feed" phx-update="stream" class="flex flex-col gap-2">
-      <%= for {dom_id, post} <- @stream.posts do %>
-        <div id={dom_id} class="w-1/2 mx-auto flex-col gap-2 border-rounded">
-          <img src={post.image_path} />
-          <p><%= post.user.email %></p>
-          <p><%= post.caption %></p>
-        </div>
-      <% end %>
+      <.modal
+        id="new-post-modal"
+        show={false}
+      >
+        <.live_component
+          module={InstaCloneWeb.PostLive.FormComponent}
+          id={:new}
+          title="New Post"
+          action={:new}
+          uploads={@uploads}
+          current_user={@current_user}
+        />
+      </.modal>
     </div>
-
-    <.modal id="new-post-modal">
-      <.simple_form for={@form} phx-change="validate" phx-submit="save_post">
-        <.live_file_input upload={@uploads.image} required />
-        <.input field={@form[:caption]} type="textarea" label="Caption" required />
-        <.button type="submit" phx-disable-with="Saving...">Create Post</.button>
-      </.simple_form>
-    </.modal>
     """
   end
 
   @impl true
   def mount(_params, _session, socket) do
-    case connected?(socket) do
-      true ->
-        Phoenix.PubSub.subscribe(InstaClone.Pubsub, "posts")
-        form =
-          %Post{}
-          |> Post.changeset(%{})
-          |> to_form(as: "post")
-
-        posts = Posts.list_posts()
-
-        socket =
-          socket
-          |> assign(form: form)
-          |> stream(:posts, posts)
-          |> allow_upload(:image, accept: ~w(.png .jpg), max_entries: 1)
-
-        {:ok, socket}
-
-      false ->
-        {:ok, socket}
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(InstaClone.Pubsub, "posts")
     end
+
+    {:ok,
+     socket
+     |> assign(:page_title, "Posts Feed")
+     |> allow_upload(:image, accept: ~w(.png .jpg), max_entries: 1)
+     |> stream(:posts, Posts.list_posts())}
   end
 
   @impl true
