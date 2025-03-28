@@ -2,6 +2,7 @@ defmodule InstaCloneWeb.PostLive.FormComponent do
   use InstaCloneWeb, :live_component
 
   alias InstaClone.Posts
+  alias InstaClone.Post
 
   @impl true
   def render(assigns) do
